@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { EntitesService } from './entites.service';
-import { EntitesController } from './entites.controller';
-import { SysEntitesEntity } from './entities/entites.entity';
+import { EntitiesService } from './entites.service';
+import { EntitiesController } from './entites.controller';
+import { ExtendBaseEntity } from './entities/entites.entity';
 @Module({
-  imports: [TypeOrmModule.forFeature([SysEntitesEntity])],
-  controllers: [EntitesController],
-  providers: [EntitesService],
+  imports: [TypeOrmModule.forFeature([ExtendBaseEntity])],
+  controllers: [EntitiesController],
+  providers: [EntitiesService],
 })
 export class SysEntitesModule {}

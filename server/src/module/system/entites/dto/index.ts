@@ -18,11 +18,11 @@ export class CreateEntitesDto {
 
   @IsString()
   @Length(0, 500)
-  entitesValue: string;
+  entitesValue?: string;
 
   @IsString()
   @Length(0, 100)
-  entitesKey: string;
+  entitesKey?: string;
 
   @IsString()
   @IsEnum(TypeEnum)
@@ -45,6 +45,11 @@ export class CreateEntitesDto {
   status?: string;
 }
 
+export class EntityColumn {
+  name:string
+}
+
+
 export class UpdateEntitesDto extends CreateEntitesDto {
   @IsNumber()
   entitesId: number;
@@ -65,4 +70,12 @@ export class ListEntitesDto extends PagingDto {
   @IsString()
   @IsEnum(TypeEnum)
   entitesType?: string;
+}
+
+
+
+export class CreateEntityDto {
+  @IsString()
+  @Length(0, 100)
+  entitesName: string;
 }

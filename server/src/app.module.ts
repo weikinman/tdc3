@@ -25,6 +25,7 @@ import { AxiosModule } from './module/axios/axios.module';
 import { OnlineModule } from './module/monitor/online/online.module';
 import { ServerModule } from './module/monitor/server/server.module';
 import { UploadModule } from './module/upload/upload.module';
+import { SysEntitesModule } from './module/system/entites/entites.module';
 
 @Global()
 @Module({
@@ -77,6 +78,7 @@ import { UploadModule } from './module/upload/upload.module';
     OnlineModule,
     ServerModule,
     UploadModule,
+    SysEntitesModule,
   ],
   providers: [
     {

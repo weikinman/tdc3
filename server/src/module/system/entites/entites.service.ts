@@ -1,104 +1,90 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
-import { ResultData } from 'src/common/utils/result';
-import { CreateEntitesDto, UpdateEntitesDto, ListEntitesDto } from './dto/index';
-import { SysEntitesEntity } from './entities/entites.entity';
-import { RedisService } from 'src/module/redis/redis.service';
-import { CacheEnum } from 'src/common/enum/index';
+import { InjectEntityManager,InjectRepository } from '@nestjs/typeorm';
+import { EntityManager, Repository } from 'typeorm';
+import {CreateEntityDto} from './dto/index'
+import {ExtendBaseEntity} from './entities/entites.entity'
+import {entityManager} from '../../../common/entities/manager'
 
 @Injectable()
-export class EntitesService {
+export class EntitiesService {
   constructor(
-    @InjectRepository(SysEntitesEntity)
-    private readonly sysEntitesEntityRep: Repository<SysEntitesEntity>,
-    private readonly redisService: RedisService,
+    @InjectEntityManager() private entityManager: EntityManager,
+    @InjectRepository(ExtendBaseEntity)
+    private readonly entitysRepo: Repository<ExtendBaseEntity>,
   ) {}
-  async create(createEntitesDto: CreateEntitesDto) {
-    await this.sysEntitesEntityRep.save(createEntitesDto);
-    return ResultData.ok();
+
+
+  async queryTable(tableName: string, id: number) {
+    const queryRunner = this.entityManager.connection.createQueryRunner();
+    return await queryRunner.query(`SELECT * FROM ${tableName} WHERE id = $1`, [id]);
   }
 
-  async findAll(query: ListEntitesDto) {
-    const entity = this.sysEntitesEntityRep.createQueryBuilder('entity');
-    entity.where('entity.delFlag = :delFlag', { delFlag: '0' });
-
-    if (query.entitesName) {
-      entity.andWhere(`entity.entitesName LIKE "%${query.entitesName}%"`);
-    }
-
-    if (query.entitesKey) {
-      entity.andWhere(`entity.entitesKey LIKE "%${query.entitesKey}%"`);
-    }
-
-    if (query.entitesType) {
-      entity.andWhere('entity.entitesType = :entitesType', { entitesType: query.entitesType });
-    }
-
-    if (query.params?.beginTime && query.params?.endTime) {
-      entity.andWhere('entity.createTime BETWEEN :start AND :end', { start: query.params.beginTime, end: query.params.endTime });
-    }
-
-    entity.skip(query.pageSize * (query.pageNum - 1)).take(query.pageSize);
-    const [list, total] = await entity.getManyAndCount();
-
-    return ResultData.ok({
-      list,
-      total,
-    });
+  async createTable(entityName: string, columns: { name: string; type: string }[]) {
+    const entitys = entityManager.getEntitys();
+    console.log('entity',entitys);
+    
+    const queryRunner = this.entityManager.connection.createQueryRunner();
+    await queryRunner.connect();
+    let columnsSQL =  entitys.map(entity=>{
+      let lenStr = entity.length?`(${entity.length})`:'';
+      return `${entity.name} ${entity.type}${lenStr}`
+    }).join(', ');
+    
+    console.log('columnsSQL',columnsSQL)
+    //columns.map(col => `${col.name} ${col.type}`).join(', ');
+    await queryRunner.query(`CREATE TABLE IF NOT EXISTS ${entityName} (${columnsSQL})`);
+    await queryRunner.release();
   }
 
-  async findOne(id: number) {
-    const data = await this.sysEntitesEntityRep.findOne({
-      where: {
-        entitesId: id,
-      },
-    });
-    return ResultData.ok(data);
+  async addColumn(tableName: string, columnName: string, columnType: string) {
+    const queryRunner = this.entityManager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.query(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnType}`);
+    await queryRunner.release();
   }
 
-  /**
-   * 根据配置键值异步查找一条配置信息。
-   *
-   * @param entitesKey 配置的键值，用于查询配置信息。
-   * @returns 返回一个结果对象，包含查询到的配置信息。如果未查询到，则返回空结果。
-   */
-  async findOneByentitesKey(entitesKey: string) {
-    // 尝试从Redis缓存中获取配置信息
-    const cacheData = await this.redisService.storeGet(`${CacheEnum.SYS_CONFIG_KEY}${entitesKey}`);
-    if (cacheData) {
-      // 如果缓存中存在配置信息，则直接返回
-      return ResultData.ok(cacheData);
-    }
-
-    // 从数据库中查询配置信息
-    const data = await this.sysEntitesEntityRep.findOne({
-      where: {
-        entitesKey: entitesKey,
-      },
-    });
-    // 将从数据库中查询到的配置信息存入Redis缓存
-    await this.redisService.storeSet(`${CacheEnum.SYS_CONFIG_KEY}${entitesKey}`, data);
-    return ResultData.ok(data);
+  async dropColumn(tableName: string, columnName: string) {
+    const queryRunner = this.entityManager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.query(`ALTER TABLE ${tableName} DROP COLUMN ${columnName}`);
+    await queryRunner.release();
   }
 
-  async update(updateEntitesDto: UpdateEntitesDto) {
-    await this.sysEntitesEntityRep.update(
-      {
-        entitesId: updateEntitesDto.entitesId,
-      },
-      updateEntitesDto,
+
+  // async createUser(email: string, name: string) {
+  //   return this.userRepository
+  //     .createQueryBuilder()
+  //     .insert()
+  //     .into(CreateEntityDto)
+  //     .values({ entitesName: email })
+  //     .execute();
+  // }
+
+
+  async createUser(tableName:string, email: string, name: string): Promise<void> {
+    const queryRunner = this.entityManager.connection.createQueryRunner();
+    await queryRunner.query(
+      `INSERT INTO ${tableName}(email, name) VALUES ($1, $2)`,
+      [email, name]
     );
-    return ResultData.ok();
+  }
+ 
+  
+  async getTableStructure(tableName: string): Promise<any> {
+    const queryRunner = this.entityManager.connection.createQueryRunner();
+    await queryRunner.connect();
+    const result = await queryRunner.query(`SELECT column_name, data_type, character_maximum_length FROM information_schema.columns WHERE table_name = $1`, [tableName]);
+    await queryRunner.release();
+    return result;
   }
 
-  async remove(ids: number[]) {
-    const data = await this.sysEntitesEntityRep.update(
-      { entitesId: In(ids) },
-      {
-        delFlag: '1',
-      },
-    );
-    return ResultData.ok(data);
+  async getAllTableNames(): Promise<string[]> {
+    const queryRunner = this.entityManager.connection.createQueryRunner();
+    await queryRunner.connect();
+    const tables = await queryRunner.query(`SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE'`);
+    await queryRunner.release();
+    return tables.map(table => { 
+      return table.TABLE_NAME; 
+    });
   }
 }

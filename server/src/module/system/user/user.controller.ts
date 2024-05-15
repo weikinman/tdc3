@@ -113,4 +113,12 @@ export class UserController {
     const menuIds = ids.split(',').map((id) => +id);
     return this.userService.remove(menuIds);
   }
+
+  @ApiOperation({
+    summary: '用户-详情',
+  })
+  @Get('/client/:id')
+  findOneOnClient(@Param('id') id: string) {
+    return this.userService.findOne(+id);
+  }
 }
