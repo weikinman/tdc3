@@ -1,11 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager,InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import { Entity, EntityManager, Repository } from 'typeorm';
 import {CreateEntityDto} from './dto/index'
 import {ExtendBaseEntity} from './entities/entites.entity'
-import {entityManager} from '../../../common/entities/manager'
+import {entityManagerBase, getEntityRepo} from '../../../common/entities/manager'
 
-@Injectable()
+import { createDynamicClass } from '../../../common/entities/manager'
+
+import { ResultData } from 'src/common/utils/result';
+
 export class EntitiesService {
   constructor(
     @InjectEntityManager() private entityManager: EntityManager,
@@ -13,6 +16,31 @@ export class EntitiesService {
     private readonly entitysRepo: Repository<ExtendBaseEntity>,
   ) {}
 
+  async create(entityName: string) {
+    const repo = getEntityRepo(ExtendBaseEntity);
+    const res = await repo.save({ entityName });
+
+    return ResultData.ok();
+  }
+async createTable2(entityName: string, columns: { name: string; type: string }[]) {
+    const entitys = entityManagerBase.getEntitys();
+    console.log('entity',entitys);
+    
+    const queryRunner = this.entityManager.connection.createQueryRunner();
+    await queryRunner.connect();
+    let columnsSQL =  entitys.map(entity=>{
+      let lenStr = entity.length?`(${entity.length})`:'';
+      return `${entity.name} ${entity.type}${lenStr}`
+    }).join(', ');
+    
+    //columns.map(col => `${col.name} ${col.type}`).join(', ');
+    await queryRunner.query(`CREATE TABLE IF NOT EXISTS ${entityName} (${columnsSQL})`);
+    await queryRunner.release();
+
+    const dynamicClass = createDynamicClass(entityName);
+    Entity(entityName)(dynamicClass)
+    console.log('columnsSQL',columnsSQL)
+  }
 
   async queryTable(tableName: string, id: number) {
     const queryRunner = this.entityManager.connection.createQueryRunner();
@@ -20,7 +48,7 @@ export class EntitiesService {
   }
 
   async createTable(entityName: string, columns: { name: string; type: string }[]) {
-    const entitys = entityManager.getEntitys();
+    const entitys = entityManagerBase.getEntitys();
     console.log('entity',entitys);
     
     const queryRunner = this.entityManager.connection.createQueryRunner();
@@ -36,10 +64,11 @@ export class EntitiesService {
     await queryRunner.release();
   }
 
-  async addColumn(tableName: string, columnName: string, columnType: string) {
+  async addColumn(tableName: string, columnName: string, columnType: string, columntLength: string) {
     const queryRunner = this.entityManager.connection.createQueryRunner();
     await queryRunner.connect();
-    await queryRunner.query(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnType}`);
+    let lenStr = columntLength?`(${columntLength})`:'';
+    await queryRunner.query(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnType}${lenStr}`);
     await queryRunner.release();
   }
 
@@ -49,17 +78,6 @@ export class EntitiesService {
     await queryRunner.query(`ALTER TABLE ${tableName} DROP COLUMN ${columnName}`);
     await queryRunner.release();
   }
-
-
-  // async createUser(email: string, name: string) {
-  //   return this.userRepository
-  //     .createQueryBuilder()
-  //     .insert()
-  //     .into(CreateEntityDto)
-  //     .values({ entitesName: email })
-  //     .execute();
-  // }
-
 
   async createUser(tableName:string, email: string, name: string): Promise<void> {
     const queryRunner = this.entityManager.connection.createQueryRunner();
@@ -88,3 +106,5 @@ export class EntitiesService {
     });
   }
 }
+
+Injectable()(EntitiesService)

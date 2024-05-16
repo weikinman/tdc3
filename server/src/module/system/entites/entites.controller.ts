@@ -7,9 +7,12 @@ export class EntitiesController {
 
   @Post('/create')
   createTable(@Body() body: { entityName: string; columns: { name: string; type: string }[] }) {
-    return this.entitiesService.createTable(body.entityName, body.columns);
+    return this.entitiesService.createTable2(body.entityName, body.columns);
   }
-
+  @Post('/addColumn')
+  addColumn(@Body() body: { entityName: string; column: { name: string; type: string, length:string } }) {
+    return this.entitiesService.addColumn(body.entityName, body.column.name,body.column.type,body.column.length);
+  }
   @Get('/list')
   queryTable() {
     return this.entitiesService.getAllTableNames();

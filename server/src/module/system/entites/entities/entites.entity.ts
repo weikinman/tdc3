@@ -1,9 +1,8 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 import { BaseEntity } from 'src/common/entities/base';
 
-@Entity('sys_entites', {
-  comment: '',
-})
+import { createDynamicClass } from '../../../../common/entities/manager'
+
 export class ExtendBaseEntity extends BaseEntity {
   @PrimaryGeneratedColumn({ type: 'int', name: 'entity_id', comment: '' })
   public entityId: number;
@@ -12,3 +11,7 @@ export class ExtendBaseEntity extends BaseEntity {
   public entityName: string;
 
 }
+
+Entity('sys_entites', {
+  comment: '',
+})(ExtendBaseEntity)
