@@ -8,6 +8,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ResultData } from 'src/common/utils/result';
 import { Controller, Post, Body, Get } from '@nestjs/common';
+import { MyDynamicModule } from '../dynamicModules';
 class EntityManagerBase {
     private entitys: any[];
 
@@ -89,20 +90,22 @@ class BaseController{
 export function createDynamicController(){
     const EntityController = class extends BaseController {
     }
-    Controller('/system/entites')(EntityController)
+    Controller('/testevent')(EntityController)
     return EntityController;
 }
-export function createDynamicModule(EntityEntities){
+export function createDynamicModule(EntityEntities?){
     const SysEntitesModule = createDynamicClass('SysEntitesModule');
     const EntitiesController = createDynamicController();
     const EntitiesService = createDynamicService();
     Module({
-        imports: [TypeOrmModule.forFeature([EntityEntities])],
+        imports: [],
         controllers: [EntitiesController],
         providers: [EntitiesService],
+        exports: [EntitiesService],
     })(SysEntitesModule) 
 
     return SysEntitesModule;
+    // return MyDynamicModule.register()
 }
 
 export function createEntityService(){

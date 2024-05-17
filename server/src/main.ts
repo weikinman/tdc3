@@ -4,6 +4,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { mw as requestIpMw } from 'request-ip';
 
 import { NestFactory } from '@nestjs/core';
+import { Module, DynamicModule,INestApplication } from '@nestjs/common';
 import { AppModule } from 'src/app.module';
 import { ExceptionsFilter } from 'src/common/filters/exceptions-filter';
 import { HttpExceptionsFilter } from 'src/common/filters/http-exceptions-filter';
@@ -11,12 +12,14 @@ import { MYValidationPipe } from 'src/common/pipes/validation.pipe';
 
 import { ConfigService } from '@nestjs/config';
 
-async function bootstrap() {
+export let rootApp = null;
+async function bootstrap():Promise<any> {
   const app = await NestFactory.create(AppModule, {
     cors: true,
   });
+  rootApp = app;
   const config = app.get(ConfigService);
-
+  
   // 设置访问频率
   app.use(
     rateLimit({
@@ -55,5 +58,7 @@ async function bootstrap() {
   await app.listen(port);
 
   console.log(`Nest-Admin 服务启动成功 `, '\n', '\n', '服务地址', `http://localhost:${port}${prefix}/`, '\n', 'swagger 文档地址        ', `http://localhost:${port}${prefix}/swagger-ui/`);
+
+  
 }
 bootstrap();

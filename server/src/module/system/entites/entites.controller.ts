@@ -17,5 +17,9 @@ export class EntitiesController {
   queryTable() {
     return this.entitiesService.getAllTableNames();
   }
-  // 添加更多的端点以支持列的添加、删除等
+
+  @Post('/test')
+  create(@Body() body: { entityName: string}) {
+    return this.entitiesService.create(body.entityName);
+  }
 }

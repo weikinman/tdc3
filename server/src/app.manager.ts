@@ -1,4 +1,4 @@
-import { Module, Global } from '@nestjs/common';
+import { Module, Global, DynamicModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import configuration from './config/index';
@@ -26,17 +26,9 @@ import { OnlineModule } from './module/monitor/online/online.module';
 import { ServerModule } from './module/monitor/server/server.module';
 import { UploadModule } from './module/upload/upload.module';
 import { SysEntitesModule } from './module/system/entites/entites.module';
-import { dynamicModule } from './common/dynamicModules';
-import { DynamicService } from './common/dynamicModules/service';
-import { DynamicController } from './common/dynamicModules/controller';
-// const dynamicProviders = []; // 动态提供者数组
-// const dynamicControllers = []; // 动态控制器数组
-
-// const dynamicModule = MyDynamicModule.register();
-@Global()
-@Module({
-  imports: [
-    // dynamicModule,
+@Module({})
+class AdditionalModule {}
+let modules = [
     // 配置模块
     ConfigModule.forRoot({
       cache: true,
@@ -86,18 +78,7 @@ import { DynamicController } from './common/dynamicModules/controller';
     ServerModule,
     UploadModule,
     SysEntitesModule,
-  ],
-  controllers: [DynamicController],
-  providers: [
-    DynamicService,
-    {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard,
-    },
-  ],
-})
-export class AppModule {}
+  ]
+export const AppModules:DynamicModule = {
+           module:AdditionalModule
+}

@@ -1,26 +1,39 @@
 import { Injectable } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { InjectEntityManager,InjectRepository } from '@nestjs/typeorm';
 import { Entity, EntityManager, Repository } from 'typeorm';
 import {CreateEntityDto} from './dto/index'
 import {ExtendBaseEntity} from './entities/entites.entity'
-import {entityManagerBase, getEntityRepo} from '../../../common/entities/manager'
 
-import { createDynamicClass } from '../../../common/entities/manager'
+import { createDynamicClass,createDynamicModule, entityManagerBase, getEntityRepo, createDynamicController,  createDynamicService} from '../../../common/entities/manager'
 
 import { ResultData } from 'src/common/utils/result';
+import { MyDynamicModule, dynamicModule } from 'src/common/dynamicModules';
+import { ModuleMetadata } from '@nestjs/common/interfaces/modules/module-metadata.interface';
+import { MetadataScanner } from '@nestjs/core/metadata-scanner';
+
 
 export class EntitiesService {
   constructor(
     @InjectEntityManager() private entityManager: EntityManager,
     @InjectRepository(ExtendBaseEntity)
     private readonly entitysRepo: Repository<ExtendBaseEntity>,
+    private moduleRef: ModuleRef
   ) {}
 
   async create(entityName: string) {
-    const repo = getEntityRepo(ExtendBaseEntity);
-    const res = await repo.save({ entityName });
+    // const EntitiesController = createDynamicController();
+    // const EntitiesService = createDynamicService();
+    // dynamicModule.providers.push(EntitiesService);
+    // dynamicModule.controllers.push(EntitiesController);
+    const module = await createDynamicModule(ExtendBaseEntity)
+    console.log('createDynamicModule start')
+    this.moduleRef.create(module);
+    // AppModules.push(module);
+    // const repo = getEntityRepo(ExtendBaseEntity);
+    // const res = await repo.save({ entityName });
 
-    return ResultData.ok();
+    // return ResultData.ok();
   }
 async createTable2(entityName: string, columns: { name: string; type: string }[]) {
     const entitys = entityManagerBase.getEntitys();
