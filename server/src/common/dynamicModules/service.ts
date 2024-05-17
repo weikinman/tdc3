@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
+import { ModuleRef, LazyModuleLoader,NestContainer,GraphInspector } from '@nestjs/core';
 import { InjectEntityManager,InjectRepository } from '@nestjs/typeorm';
+import {DependenciesScanner} from '@nestjs/core/scanner'
+import {MetadataScanner} from '@nestjs/core/metadata-scanner'
+import {Injector} from '@nestjs/core/injector/injector'
+import {InstanceLoader} from '@nestjs/core/injector/instance-loader'
 import { Entity, EntityManager, Repository } from 'typeorm';
 
 import { ResultData } from 'src/common/utils/result';
@@ -27,9 +31,9 @@ export class DynamicService {
         // const res = await repo.save({ entityName });
     
         // return ResultData.ok();
-      
-    const dynamicModuleInstance = await this.moduleRef.create(module);
-    console.log('dynamicModuleInstance',dynamicModuleInstance)
+   
+
+    // const lazyLoad = new LazyModuleLoader();
     // 可以进一步操作 dynamicModuleInstance
   }
 
